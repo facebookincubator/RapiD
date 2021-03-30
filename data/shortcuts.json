@@ -361,6 +361,12 @@
             "shortcuts": ["operations.cycle_highway_tag.key"],
             "text": "shortcuts.editing.operations.cycle_highway_tag",
             "rapid": true
+          },
+          {
+            "modifiers": ["⇧"],
+            "shortcuts": ["operations.add_sidewalk.key"],
+            "text": "shortcuts.editing.operations.add_sidewalk",
+            "rapid": true
           }
         ]
       }

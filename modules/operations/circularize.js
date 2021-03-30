@@ -27,6 +27,7 @@ export function operationCircularize(context, selectedIDs) {
     }
 
     var operation = function() {
+        console.log('WHY ARE WE HERE?')
         if (!_actions.length) return;
 
         var combinedAction = function(graph, t) {

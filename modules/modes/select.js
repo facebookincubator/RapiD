@@ -181,7 +181,8 @@ export function modeSelect(context, selectedIDs) {
                 // group copy/downgrade/delete operation together at the end of the list
                 Operations.operationCopy(context, selectedIDs),
                 Operations.operationDowngrade(context, selectedIDs),
-                Operations.operationDelete(context, selectedIDs)
+                Operations.operationDelete(context, selectedIDs),
+                // Operations.operationAddSidewalk(context, selectedIDs)
             ]).filter(function(operation) {
                 return operation.available();
             });
