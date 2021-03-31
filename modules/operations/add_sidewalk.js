@@ -114,7 +114,7 @@ export function operationAddSidewalk(context, selectedIDs) {
 
     // don't cache this because the visible extent could change
     operation.disabled = function() {
-        if (!getFilteredIdsToCopy().length) return 'Please select a way to add sidewalk';
+        if (!getFilteredIdsToCopy().length) return 'not_selected';
         if (_extent.percentContainedIn(context.map().extent()) < 0.8) {
             return 'too_large';
         }
@@ -124,13 +124,13 @@ export function operationAddSidewalk(context, selectedIDs) {
     operation.tooltip = function() {
         var disable = operation.disabled();
         return disable ?
-            'adding sidewalk is disabled cause: ' :
-            'add a sidewalk to selected way';
+            t('operations.add_sidewalk.' + disable) :
+            t('operations.add_sidewalk.description');
     };
 
 
     operation.annotation = function() {
-        return 'sidewalk created from osm way';
+        return t('operations.add_sidewalk.annotation');
     };
 
 

@@ -517,8 +517,10 @@ en:
     add_sidewalk:
       title: Add Sidewalk
       key: K
-      description: Shortcut to add sidewalk to a selected way.
+      description: Add sidewalk to the selected way.
       annotation: Added sidewalk.
+      too_large: Sidewalk can't be added because not enough way is visible.
+      not_selected: Please select a way to add a sidewalk.
   restriction:
     controls:
       distance: Distance
