@@ -33,7 +33,8 @@ export function operationAddSidewalk(context, selectedIDs) {
         var tags = {};
         if (oldPreset) tags = oldPreset.unsetTags(tags, geometry);
         if(entity.type === 'way' && preset) {
-            tags = preset.setTags({name: entity.tags.name}, geometry, false);
+            var nameTag = entity.tags.name ? {name: entity.tags.name} : {};
+            tags = preset.setTags(nameTag, geometry, false);
         }
         context.perform(actionChangeTags(entityID, tags));
     }
