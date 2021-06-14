@@ -1,4 +1,3 @@
-/* global Mapillary:false */
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { select as d3_select } from 'd3-selection';
 
@@ -38,8 +37,8 @@ const mapFeatureValues = [
     'object--trash-can'
 ].join(',');
 
-const viewercss = 'mapillary-js/mapillary.min.css';
-const viewerjs = 'mapillary-js/mapillary.min.js';
+const viewercss = 'mapillary-js/mapillary.css';
+const viewerjs = 'mapillary-js/mapillary.js';
 const minZoom = 14;
 const dispatch = d3_dispatch('change', 'loadedImages', 'loadedSigns', 'loadedMapFeatures', 'bearingChanged', 'nodeChanged');
 const tiler = new Tiler().skipNullIsland(true);
@@ -55,6 +54,7 @@ let _mlyShowSignDetections = false;
 let _mlyViewer;
 let _mlyViewerFilter = ['all'];
 
+
 function abortRequest(controller) {
     controller.abort();
 }
@@ -64,10 +64,7 @@ function loadTiles(which, url, maxZoom, projection) {
     // determine the needed tiles to cover the view
     const proj = new Projection().transform(projection.transform()).dimensions(projection.clipExtent());
     const tiles = tiler.zoomRange([minZoom, maxZoom]).getTiles(proj).tiles;
-
-    tiles.forEach(function(tile) {
-        loadTile(which, url, tile);
-    });
+    tiles.forEach(tile => loadTile(which, url, tile));
 }
 
 
@@ -83,18 +80,14 @@ function loadTile(which, url, tile) {
         .replace('{z}', tile.xyz[2]);
 
     fetch(requestUrl, { signal: controller.signal })
-        .then(function(response) {
-            if (!response.ok) {
-                throw new Error(response.status + ' ' + response.statusText);
-            }
+        .then(response => {
+            if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
             cache.loaded[tileId] = true;
             delete cache.inflight[tileId];
             return response.arrayBuffer();
         })
-        .then(function(data) {
-            if (!data) {
-                throw new Error('No Data');
-            }
+        .then(data => {
+            if (!data) throw new Error('No Data');
             loadTileDataToCache(data, tile, which);
 
             if (which === 'images') {
@@ -105,7 +98,7 @@ function loadTile(which, url, tile) {
                 dispatch.call('loadedMapFeatures');
             }
         })
-        .catch(function() {
+        .catch(() => {
             cache.loaded[tileId] = true;
             delete cache.inflight[tileId];
         });
@@ -114,13 +107,7 @@ function loadTile(which, url, tile) {
 
 function loadTileDataToCache(data, tile, which) {
     const vectorTile = new vt.VectorTile(new Protobuf(data));
-    let features,
-        cache,
-        layer,
-        i,
-        feature,
-        loc,
-        d;
+    let features, cache, layer, i, feature, loc, d;
 
     if (vectorTile.layers.hasOwnProperty('mapillary-images')) {
         features = [];
@@ -199,18 +186,14 @@ function loadData(which, url) {
     };
 
     return fetch(url, options)
-        .then(function(response) {
-            if (!response.ok) {
-                throw new Error(response.status + ' ' + response.statusText);
-            }
+        .then(response => {
+            if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
             return response.json();
         })
-        .then(function(data) {
-            if (!data || !data.features || !data.features.length) {
-                throw new Error('No Data');
-            }
+        .then(data => {
+            if (!data || !data.features || !data.features.length) throw new Error('No Data');
 
-            data.features.forEach(function(feature) {
+            data.features.forEach(feature => {
                 if (which === 'image_detections') {
                     const imageKey = feature.properties.image_key;
                     if (!cache.forImageKey[imageKey]) {
@@ -243,7 +226,7 @@ function searchLimited(limit, projection, rtree) {
     limit = limit || 5;
 
     return partitionViewport(projection)
-        .reduce(function(result, extent) {
+        .reduce((result, extent) => {
             const found = rtree.search(extent.bbox()).slice(0, limit).map(d => d.data);
             return (found.length ? result.concat(found) : result);
         }, []);
@@ -310,18 +293,18 @@ export default {
         const min = [viewport[0][0], viewport[1][1]];
         const max = [viewport[1][0], viewport[0][1]];
         const bbox = geoExtent(projection.invert(min), projection.invert(max)).bbox();
-        const sequenceKeys = {};
+        const sequenceIds = {};
         let lineStrings = [];
         // find sequences for images in viewport
         _mlyCache.images.rtree.search(bbox)
-            .forEach(function(d) {
+            .forEach(d => {
                 if (d.data.skey) {
-                    sequenceKeys[d.data.skey] = true;
+                    sequenceIds[d.data.skey] = true;
                 }
             });
 
-        Object.keys(sequenceKeys).forEach(function(sequenceKey) {
-            lineStrings = lineStrings.concat(_mlyCache.sequences.lineString[sequenceKey]);
+        Object.keys(sequenceIds).forEach(sequenceId => {
+            lineStrings = lineStrings.concat(_mlyCache.sequences.lineString[sequenceId]);
         });
 
         return lineStrings;
@@ -378,10 +361,8 @@ export default {
                 .attr('rel', 'stylesheet')
                 .attr('crossorigin', 'anonymous')
                 .attr('href', context.asset(viewercss))
-                .on('load.serviceMapillary', loaded)
-                .on('error.serviceMapillary', function() {
-                    reject();
-                });
+                .on('load.servicemapillary', loaded)
+                .on('error.servicemapillary', reject);
 
             // load mapillary-viewerjs
             head.selectAll('#ideditor-mapillary-viewerjs')
@@ -391,10 +372,8 @@ export default {
                 .attr('id', 'ideditor-mapillary-viewerjs')
                 .attr('crossorigin', 'anonymous')
                 .attr('src', context.asset(viewerjs))
-                .on('load.serviceMapillary', loaded)
-                .on('error.serviceMapillary', function() {
-                    reject();
-                });
+                .on('load.servicemapillary', loaded)
+                .on('error.servicemapillary', reject);
         })
         .catch(function() {
             _loadViewerPromise = null;
@@ -462,9 +441,10 @@ export default {
             filter.push(['>=', 'capturedAt', new Date(toDate).getTime()]);
         }
 
-        if (_mlyViewer) {
-            _mlyViewer.setFilter(filter);
-        }
+// bhousel - out for now
+//        if (_mlyViewer) {
+//            _mlyViewer.setFilter(filter);
+//        }
         _mlyViewerFilter = filter;
 
         return filter;
@@ -544,11 +524,11 @@ export default {
 
     initViewer: function(context) {
         const that = this;
-        if (!window.Mapillary) return;
+        const Mapillary = window.mapillary;
+        if (!Mapillary) return;
 
         const opts = {
-            apiClient: clientId,
-            baseImageSize: 320,
+            accessToken: clientId,
             component: {
                 cover: false,
                 keyboard: false,
@@ -565,7 +545,7 @@ export default {
                 direction: false,
                 imagePlane: false,
                 keyboard: false,
-                mouse: false,
+                pointer: false,
                 sequence: false,
                 tag: false,
                 image: true,        // fallback
@@ -574,14 +554,15 @@ export default {
         }
 
         _mlyViewer = new Mapillary.Viewer(opts);
-        _mlyViewer.on('nodechanged', nodeChanged);
-        _mlyViewer.on('bearingchanged', bearingChanged);
-        if (_mlyViewerFilter) {
-            _mlyViewer.setFilter(_mlyViewerFilter);
-        }
+        _mlyViewer.on('image', nodeChanged);
+        _mlyViewer.on('bearing', bearingChanged);
+// bhousel - out for now
+//        if (_mlyViewerFilter) {
+//            _mlyViewer.setFilter(_mlyViewerFilter);
+//        }
 
         // Register viewer resize handler
-        context.ui().photoviewer.on('resize.mapillary', function() {
+        context.ui().photoviewer.on('resize.mapillary', () => {
             if (_mlyViewer) _mlyViewer.resize();
         });
 
@@ -602,8 +583,8 @@ export default {
 
             if (index > -1) {              // `nodechanged` initiated from clicking on a marker..
                 clicks.splice(index, 1);   // remove the click
-            } else {             // `nodechanged` initiated from the Mapillary viewer controls..
-                const loc = node.computedLatLon ? [node.computedLatLon.lon, node.computedLatLon.lat] : [node.latLon.lon, node.latLon.lat];
+            } else {             // `nodechanged` initiated from the mapillary viewer controls..
+                const loc = node.computedLngLat ? [node.computedLngLat.lng, node.computedLngLat.lat] : [node.lngLat.lng, node.lngLat.lat];
                 context.map().centerEase(loc);
                 that.selectImage(context, node.key, true);
             }
@@ -632,17 +613,18 @@ export default {
             _mlyClicks.push(imageKey);
         }
 
-        if (_mlyShowFeatureDetections) {
-            this.updateDetections(imageKey, `${imageDetectionUrl}?layers=points&values=${mapFeatureValues}&image_keys=${imageKey}&client_id=${clientId}`);
-        }
-
-        if (_mlyShowSignDetections) {
-            this.updateDetections(imageKey, `${imageDetectionUrl}?layers=trafficsigns&image_keys=${imageKey}&client_id=${clientId}`);
-        }
+//bhousel out for now
+//        if (_mlyShowFeatureDetections) {
+//            this.updateDetections(imageKey, `${imageDetectionUrl}?layers=points&values=${mapFeatureValues}&image_keys=${imageKey}&client_id=${clientId}`);
+//        }
+//
+//        if (_mlyShowSignDetections) {
+//            this.updateDetections(imageKey, `${imageDetectionUrl}?layers=trafficsigns&image_keys=${imageKey}&client_id=${clientId}`);
+//        }
 
         if (_mlyViewer && imageKey) {
-            _mlyViewer.moveToKey(imageKey)
-                .catch(function(e) { console.error('mly3', e); });  // eslint-disable-line no-console
+            _mlyViewer.moveTo(imageKey)
+                .catch(err => console.error(err));  // eslint-disable-line no-console
         }
 
         return this;
@@ -657,11 +639,11 @@ export default {
     setActiveImage: function(node) {
         if (node) {
             _mlyActiveImage = {
-                ca: node.originalCA,
+                ca: node.originalCompassAngle,
                 key: node.key,
-                loc: [node.originalLatLon.lon, node.originalLatLon.lat],
+                loc: [node.originalLngLat.lng, node.originalLngLat.lat],
                 pano: node.pano,
-                sequenceKey: node.sequenceKey
+                sequenceId: node.sequenceId
             };
         } else {
             _mlyActiveImage = null;
@@ -685,18 +667,18 @@ export default {
         }
 
         const hoveredImageKey = hovered && hovered.key;
-        const hoveredSequenceKey = hovered && hovered.skey;
+        const hoveredSequenceId = hovered && hovered.skey;
 
         const selectedImageKey = _mlyActiveImage && _mlyActiveImage.key;
-        const selectedSequenceKey = _mlyActiveImage && _mlyActiveImage.sequenceKey;
+        const selectedSequenceId = _mlyActiveImage && _mlyActiveImage.sequenceId;
 
         context.container().selectAll('.layer-mapillary .viewfield-group')
-            .classed('highlighted', function(d) { return d.skey === selectedSequenceKey; })
-            .classed('hovered', function(d) { return d.key === hoveredImageKey; });
+            .classed('highlighted', d => d.skey === selectedSequenceId)
+            .classed('hovered', d => d.key === hoveredImageKey);
 
         context.container().selectAll('.layer-mapillary .sequence')
-            .classed('highlighted', function(d) { return d.properties.key === hoveredSequenceKey; })
-            .classed('currentView', function(d) { return d.properties.key === selectedSequenceKey; });
+            .classed('highlighted', d => d.properties.key === hoveredSequenceId)
+            .classed('currentView', d => d.properties.key === selectedSequenceId);
 
         // update viewfields if needed
         context.container().selectAll('.viewfield-group .viewfield')
@@ -721,30 +703,28 @@ export default {
 
         if (!_mlyCache.image_detections.forImageKey[imageKey]) {
             loadData('image_detections', url)
-                .then(() => {
-                    showDetections(_mlyCache.image_detections.forImageKey[imageKey] || []);
-            });
+                .then(() => showDetections(_mlyCache.image_detections.forImageKey[imageKey] || []) );
         } else {
             showDetections(_mlyCache.image_detections.forImageKey[imageKey]);
         }
 
         function showDetections(detections) {
             const tagComponent = _mlyViewer.getComponent('tag');
-            detections.forEach(function(data) {
+            detections.forEach(data => {
                 const tag = makeTag(data);
-                if (tag) {
-                    tagComponent.add([tag]);
-                }
+                if (tag) tagComponent.add([tag]);
             });
         }
 
         function makeTag(data) {
             const valueParts = data.value.split('--');
+            const Mapillary = window.mapillary;
             if (!valueParts.length) return;
 
             let tag;
             let text;
             let color = 0xffffff;
+            let coords = data.shape.coordinates[0];
 
             if (_mlyHighlightedDetection === data.key) {
                 color = 0xffff00;
@@ -758,37 +738,25 @@ export default {
             }
 
             if (data.shape.type === 'Polygon') {
-                const polygonGeometry = new Mapillary
-                    .TagComponent
-                    .PolygonGeometry(data.shape.coordinates[0]);
-
-                tag = new Mapillary.TagComponent.OutlineTag(
-                    data.key,
-                    polygonGeometry,
-                    {
-                        text: text,
-                        textColor: color,
-                        lineColor: color,
-                        lineWidth: 2,
-                        fillColor: color,
-                        fillOpacity: 0.3,
-                    }
-                );
+                const opts = {
+                    text: text,
+                    textColor: color,
+                    lineColor: color,
+                    lineWidth: 2,
+                    fillColor: color,
+                    fillOpacity: 0.3,
+                };
+                const geometry = new Mapillary.TagComponent.PolygonGeometry(coords);
+                tag = new Mapillary.TagComponent.OutlineTag(data.key, geometry, opts);
 
             } else if (data.shape.type === 'Point') {
-                const pointGeometry = new Mapillary
-                    .TagComponent
-                    .PointGeometry(data.shape.coordinates[0]);
-
-                tag = new Mapillary.TagComponent.SpotTag(
-                    data.key,
-                    pointGeometry,
-                    {
-                        text: text,
-                        color: color,
-                        textColor: color
-                    }
-                );
+                const opts = {
+                    text: text,
+                    color: color,
+                    textColor: color
+                };
+                const geometry = new Mapillary.TagComponent.PointGeometry(coords);
+                tag = new Mapillary.TagComponent.SpotTag(data.key, geometry, opts);
             }
 
             return tag;
